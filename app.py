@@ -23,7 +23,10 @@ def generate_pdf(report_text):
 
     story.append(Paragraph("<b>AI Auditor — GAAP Compliance Report</b>", styles["Title"]))
     story.append(Spacer(1, 12))
-    story.append(Paragraph("This report summarizes AI-identified potential GAAP compliance issues based on the uploaded financial statement.", styles["Normal"]))
+    story.append(Paragraph(
+        "This report summarizes AI-identified potential GAAP compliance issues based on the uploaded financial statement.",
+        styles["Normal"]
+    ))
     story.append(Spacer(1, 12))
 
     for paragraph in report_text.split("\n"):
@@ -63,27 +66,18 @@ if uploaded_file:
         - Confidence level (Low / Medium / High)
         """
 
-        # --- Safe API call with fallback handling ---
+        # --- API call using GPT-4o-mini only ---
         try:
             response = client.chat.completions.create(
-                model="gpt-5",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 timeout=60
             )
-        except Exception:
-            st.warning("⚠️ gpt-5 model unavailable or rate limited — retrying with gpt-4o-mini...")
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": prompt}],
-                    timeout=60
-                )
-            except Exception as e:
-                st.error("⚠️ OpenAI API error: " + str(e))
-                st.info("Try again later or check your API key and usage limits.")
-                st.stop()
-
-        findings = response.choices[0].message.content
+            findings = response.choices[0].message.content
+        except Exception as e:
+            st.error("⚠️ OpenAI API error: " + str(e))
+            st.info("Try again later or check your API key and usage limits.")
+            st.stop()
 
         # --- DISPLAY RESULTS ---
         st.subheader("🧠 AI Findings")
