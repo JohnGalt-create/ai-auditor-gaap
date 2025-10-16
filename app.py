@@ -62,12 +62,19 @@ if uploaded_file:
         - Confidence level (Low / Medium / High)
         """
 
-        response = client.chat.completions.create(
-            model="gpt-5",
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # --- AI ANALYSIS ---
+try:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  # cheaper, more stable model
+        messages=[{"role": "user", "content": prompt}],
+        timeout=60
+    )
+    findings = response.choices[0].message.content
+except Exception as e:
+    st.error("⚠️ OpenAI API error: " + str(e))
+    st.info("Try again later or check your API key and usage limits.")
+    st.stop()
 
-        findings = response.choices[0].message.content
 
         st.subheader("🧠 AI Findings")
         st.write(findings)
