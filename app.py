@@ -46,6 +46,7 @@ if uploaded_file:
 
     # --- AI ANALYSIS ---
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
     with st.spinner("Analyzing for GAAP compliance issues..."):
         prompt = f"""
         You are a certified financial auditor trained in up-to-date US GAAP standards.
@@ -62,20 +63,29 @@ if uploaded_file:
         - Confidence level (Low / Medium / High)
         """
 
-        # --- AI ANALYSIS ---
-try:
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",  # cheaper, more stable model
-        messages=[{"role": "user", "content": prompt}],
-        timeout=60
-    )
-    findings = response.choices[0].message.content
-except Exception as e:
-    st.error("⚠️ OpenAI API error: " + str(e))
-    st.info("Try again later or check your API key and usage limits.")
-    st.stop()
+        # --- Safe API call with fallback handling ---
+        try:
+            response = client.chat.completions.create(
+                model="gpt-5",
+                messages=[{"role": "user", "content": prompt}],
+                timeout=60
+            )
+        except Exception:
+            st.warning("⚠️ gpt-5 model unavailable or rate limited — retrying with gpt-4o-mini...")
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    timeout=60
+                )
+            except Exception as e:
+                st.error("⚠️ OpenAI API error: " + str(e))
+                st.info("Try again later or check your API key and usage limits.")
+                st.stop()
 
+        findings = response.choices[0].message.content
 
+        # --- DISPLAY RESULTS ---
         st.subheader("🧠 AI Findings")
         st.write(findings)
         st.success("Analysis complete!")
@@ -90,4 +100,3 @@ except Exception as e:
         )
 else:
     st.info("Please upload an Excel file to begin.")
-
